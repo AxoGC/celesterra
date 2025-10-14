@@ -22,7 +22,7 @@ Celesterra 的核心在于其灵活性和数据驱动的设计。所有游戏内
   - **数据驱动**: 所有的游戏元素都通过清晰的 TypeScript/JSON 结构进行定义。
   - **表达式逻辑**: 使用 CEL 表达式处理条件判断、动态内容生成和复杂的游戏事件。
   - **效果（Effect）系统**: 游戏中的所有行为都被抽象为一系列的“效果”。例如，移动、显示消息、给予物品等。
-  - **高度可扩展**: 您可以基于内置的效果类型轻松创建自己的自定义效果（`custype`），以满足独特的玩法需求。
+  - **高度可扩展**: 您可以基于内置的效果类型轻松创建自己的自定义效果（`type`），以满足独特的玩法需求。
 
 ## 快速上手
 
@@ -62,6 +62,7 @@ export interface Datapack {
   achievements: Record<string, Achievement>; // 成就
   quests: Record<string, Quest>;         // 任务
   stats: Record<string, string>;         // 玩家或实体的状态，值是显示文本的CEL
+  calculations: Record<string, Calculation>; // 辅助计算的表达式
 }
 ```
 
@@ -156,7 +157,7 @@ export interface Place {
 | `set_flag` | 设置一个全局或局部标志位，用于任务跟踪等。 | `{ "type": "set_flag", "key": "main_quest_started", "value": true }` |
 | `play_sound`| 播放一个音效。 | `{ "type": "play_sound", "filename": "door_open.ogg" }` |
 
-### 自定义效果 (`custype`)
+### 自定义效果 (`type`)
 
 您可以在 Datapack 的 `effects` 字段中定义自己的效果类型，从而封装复杂的逻辑。
 
@@ -181,7 +182,7 @@ export interface Place {
 
 ```json
 {
-  "effect": "[{ 'custype': 'trade', 'cost': { 'item': 'gold', 'amount': 50 }, 'reward': { 'item': 'iron_sword', 'amount': 1, 'meta': { 'durability': 100 } } }]"
+  "effect": "[{ 'type': 'trade', 'cost': { 'item': 'gold', 'amount': 50 }, 'reward': { 'item': 'iron_sword', 'amount': 1, 'meta': { 'durability': 100 } } }]"
 }
 ```
 
@@ -211,12 +212,12 @@ export interface Place {
 ```json
 // 受到伤害
 {
-  "effect": "[{ 'custype': 'remove_health', 'value': 10 }]"
+  "effect": "[{ 'type': 'remove_health', 'value': 10 }]"
 }
 
 // 使用治疗药水
 {
-  "effect": "[{ 'custype': 'add_health', 'value': 25 }]"
+  "effect": "[{ 'type': 'add_health', 'value': 25 }]"
 }
 ```
 
