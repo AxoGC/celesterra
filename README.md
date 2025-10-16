@@ -22,7 +22,7 @@ Celesterra 的核心在于其灵活性和数据驱动的设计。所有游戏内
   - **数据驱动**: 所有的游戏元素都通过清晰的 TypeScript/JSON 结构进行定义。
   - **表达式逻辑**: 使用 CEL 表达式处理条件判断、动态内容生成和复杂的游戏事件。
   - **效果（Effect）系统**: 游戏中的所有行为都被抽象为一系列的“效果”。例如，移动、显示消息、给予物品等。
-  - **高度可扩展**: 您可以基于内置的效果类型轻松创建自己的自定义效果（`type`），以满足独特的玩法需求。
+  - **高度可扩展**: 通过全新的自定义函数 (Func) 机制，您可以将任何复杂的 CEL 逻辑（无论是用于计算还是生成效果）封装成可复用的模块，极大地提升了开发效率和代码的可维护性。
 
 ## 快速上手
 
@@ -157,67 +157,145 @@ export interface Place {
 | `set_flag` | 设置一个全局或局部标志位，用于任务跟踪等。 | `{ "type": "set_flag", "key": "main_quest_started", "value": true }` |
 | `play_sound`| 播放一个音效。 | `{ "type": "play_sound", "filename": "door_open.ogg" }` |
 
-### 自定义效果 (`type`)
+自定义函数 (func) 系统
 
-您可以在 Datapack 的 `effects` 字段中定义自己的效果类型，从而封装复杂的逻辑。
+为了解决传统自定义效果无法复用计算逻辑的问题，Celesterra 引入了一套强大的自定义函数系统。您可以在 Datapack 的 funcs 字段中定义任意可复用的 CEL 表达式，然后在游戏的其他任何表达式中通过内置的 func() 函数来调用它们。
 
-**示例 1: 贸易系统**
+func() 的使用方式非常简单：
 
-假设您想创建一个通用的交易效果。
+```cel
+func('function_id', { 'arg1': value1, 'arg2': value2, ... })
+```
 
-*Datapack 定义 (`effects` 部分):*
+function_id: 在 Datapack 的 funcs 中定义的函数键名。
+
+第二个参数: 一个包含所有参数的字典。在被调用的表达式中，可以通过 args 变量来访问这些参数 (例如 args.arg1)。
+
+这个机制的强大之处在于，func 可以返回任何类型的数据，这使得它既能用于封装复杂的效果组合，也能用于创建可复用的计算属性。
+
+示例 1: 可复用的计算
+
+假设您需要一个在多处使用的加法逻辑。
+
+Datapack 定义 (funcs 部分):
 
 ```json
 {
-  "effects": {
+
+  "funcs": {
+
+    "plus": {
+
+      "description": "计算两个数字的和。",
+
+      "expression": "args.a + args.b"
+
+    }
+
+  }
+
+}
+```
+
+在其他表达式中调用:
+
+现在，您可以在任何 CEL 表达式中像调用普通函数一样使用它，比如计算伤害或价格：
+
+
+
+```cel
+// 基础伤害 1 + 额外加成
+
+1 + func('plus', { 'a': 2, 'b': 3 }) // 表达式的计算结果为 6
+```
+
+示例 2: 可复用的效果 (新的贸易系统)
+
+我们可以将之前的贸易系统改写为 func，使其更清晰、更易于调用。
+
+Datapack 定义 (funcs 部分):
+
+```json
+{
+
+  "funcs": {
+
     "trade": {
-      "description": "通用交易逻辑，传入 cost 和 reward 对象。",
-      "expression": "player.items.exists(item, item.id == cost.item && item.amount >= cost.amount) ? [{ 'type': 'message', 'content': '交易成功' }, { 'type': 'clear_item', 'item': cost.item, 'amount': cost.amount }, { 'type': 'give_item', 'item': reward.item, 'amount': reward.amount, 'meta': reward.meta }] : [{ 'type': 'message', 'content': '成本不足，无法交易' }]"
+
+      "description": "通用交易逻辑，传入 cost 和 reward 对象，返回一组 Effect。",
+
+      "expression": "player.items.exists(item, item.id == args.cost.item && item.amount >= args.cost.amount) ? [{ 'type': 'message', 'content': '交易成功' }, { 'type': 'clear_item', 'item': args.cost.item, 'amount': args.cost.amount }, { 'type': 'give_item', 'item': args.reward.item, 'amount': args.reward.amount, 'meta': args.reward.meta }] : [{ 'type': 'message', 'content': '成本不足，无法交易' }]"
+
     }
+
   }
+
 }
 ```
 
-*在 `Action` 中调用:*
+在 Action 的 effect 字段中调用:
+
+调用方式变得非常简洁直观。
 
 ```json
 {
-  "effect": "[{ 'type': 'trade', 'cost': { 'item': 'gold', 'amount': 50 }, 'reward': { 'item': 'iron_sword', 'amount': 1, 'meta': { 'durability': 100 } } }]"
+
+  "label": "购买铁剑 (50金币)",
+
+  "effect": "func('trade', { 'cost': { 'item': 'gold', 'amount': 50 }, 'reward': { 'item': 'iron_sword', 'amount': 1, 'meta': { 'durability': 100 } } })"
+
 }
 ```
 
-**示例 2: 相对状态变化**
+示例 3: 相对状态变化
 
-内置的 `set_stat` 是绝对值设置。我们可以创建一个自定义效果来实现相对值的增减。
+同样，我们可以将相对生命值变化封装为 func。
 
-*Datapack 定义 (`effects` 部分):*
+Datapack 定义 (funcs 部分):
 
 ```json
 {
-  "effects": {
+
+  "funcs": {
+
     "add_health": {
+
       "description": "为玩家增加生命值，并处理上限。",
-      "expression": "[{ 'type': 'set_stat', 'stat': 'health', 'value': player.stat.health + value > 100 ? 100 : player.stat.health + value }]"
+
+      "expression": "[{ 'type': 'set_stat', 'stat': 'health', 'value': player.stat.health + args.value > 100 ? 100 : player.stat.health + args.value }]"
+
     },
+
     "remove_health": {
+
       "description": "扣除玩家生命值，并处理死亡事件。",
-      "expression": "player.stat.health - value <= 0 ? [{ 'type': 'message', 'content': '你已经死亡！' }, { 'type': 'move', 'area': 'heaven', 'place': 'gate' }] : [{ 'type': 'set_stat', 'stat': 'health', 'value': player.stat.health - value }]"
+
+      "expression": "player.stat.health - args.value <= 0 ? [{ 'type': 'message', 'content': '你已经死亡！' }, { 'type': 'move', 'area': 'heaven', 'place': 'gate' }] : [{ 'type': 'set_stat', 'stat': 'health', 'value': player.stat.health - args.value }]"
+
     }
+
   }
+
 }
 ```
 
-*在 `Action` 中调用:*
+在 Action 中调用:
+
+
 
 ```json
 // 受到伤害
-{
-  "effect": "[{ 'type': 'remove_health', 'value': 10 }]"
-}
 
-// 使用治疗药水
 {
-  "effect": "[{ 'type': 'add_health', 'value': 25 }]"
+
+  "effect": "func('remove_health', { 'value': 10 })"
+
+}// 使用治疗药水
+
+{
+
+  "effect": "func('add_health', { 'value': 25 })"
+
 }
 ```
 

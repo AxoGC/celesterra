@@ -13,7 +13,7 @@ export interface Datapack {
   version: string
   description: string
   dependencies: Record<string, string>
-  effects: Record<string, Effect>
+  funcs: Record<string, Func>
   itemtypes: Record<string, Itemtype>
   entitypes: Record<string, Entitype>
   areas: Record<string, Area>
@@ -22,16 +22,9 @@ export interface Datapack {
   stats: Record<string, string> // 玩家或实体的状态，值表示显示文本CEL
 }
 
-// 自定义的CEL表达式的type，引用标识type是datapack的键名，逻辑在expression里面
-// 调用自定义type时，传入的其他payload字段可以在expression里被引用
-export interface Effect {
-  description: string
-  expression: string // CEL => Effect[]
-}
-
-// 可以在其他表达式里面调用的计算属性
-// 调用方式：calc('calc_id', { param_1: value_1, param_2, value_2, ... })
-export interface Calculation {
+// 自定义函数，函数名是datapack的键名，逻辑在expression里面
+// 使用方法：func('key', { arg_1: val_1, arg_2: val_2, ... })
+export interface Func {
   description: string
   expression: string // CEL => any
 }
