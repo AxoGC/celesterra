@@ -374,3 +374,111 @@ Datapack 定义 (`funcs` 部分):
 ## 许可证
 
 本项目采用 [MIT License](https://opensource.org/licenses/MIT) 开源。
+
+# Celesterra 官方数据包
+
+欢迎来到 Celesterra 的核心数据包。这不是引擎，而是使用 Celesterra 引擎构建的一个**官方游戏世界和玩法框架**。
+
+本数据包旨在提供一个以**生活模拟、探索、建造和社交**为核心的“vanilla”体验。它全面利用了 Celesterra 引擎的 `Scene`, `Effect`, `stats` 和 `templates` 机制，来构建一个动态的、随时间变化的世界。
+
+## 核心机制实现
+
+本数据包的设计思路与引擎的抽象概念（如 `Scene`）紧密相连。
+
+### 1. 动态时间与环境系统
+
+游戏世界的核心是**全局时间系统**（游戏内时钟）。
+
+* **引擎状态 (`stats`)**:
+    * 本包的 `init_func` 会初始化 `stats.game.time` (一个不断递增的数字)。
+    * `calculations` (计算属性) 会基于 `stats.game.time` 派生出：
+        * `stats.game.hour` (0-23)
+        * `stats.game.day_of_season` (1-30)
+        * `stats.game.season` ('spring', 'summer', 'autumn', 'winter')
+    * `stats.game.weather` ('sunny', 'rainy', 'snowy') 也会随时间动态变化。
+* **状态栏 (`hud_ui`)**:
+    * 本包提供了一个默认的 `hud_ui`，用于在屏幕角落始终显示当前时间、日期、季节和天气。
+* **玩法影响 (场景 `condition`)**:
+    * **昼夜**: `scene_city_gate` (城门) 的 `on_enter` 效果在夜晚 (`stats.game.hour > 22`) 会 `to: 'scene_city_gate_closed'` (关闭的城门)。
+    * **季节**: `scene_river` (河流) 在冬天 (`stats.game.season == 'winter'`) 会有一个 `condition` 为 `true` 的按钮，允许 "在冰面上行走"。
+    * **保暖/降温**: `scene_wilderness` (野外) 的 `on_enter` 效果会调用一个 `func('check_temperature')`，根据季节和天气，为玩家添加 `Effect` (如 `set_stat: [{ key: 'stats.player.cold_debuff', value: 1 }]`)。
+
+### 2. 探索与收集 (场景即万物)
+
+在 Celesterra 中，没有“实体”或“物品”的特殊定义。**万物皆场景**。
+
+* **垃圾桶**: 这不是一个“物品”，这是一个 `Scene`。
+    * `scene_alley_dumpster` (后巷垃圾桶)
+    * **UI**: 包含一个按钮 `{'type': 'button', 'text': '翻找', 'effect': func('rummage_dumpster')}`
+    * `func('rummage_dumpster')` 会检查 `stats.game.time` 与 `stats.player.last_rummage_time`，如果允许，则给予物品并更新时间戳。
+* **钓鱼**: 这是一个 `Scene`。
+    * `scene_lake_fishing_spot` (湖边钓鱼点)
+    * **UI**: 包含按钮 `{'type': 'button', 'text': '开始钓鱼 (需要鱼饵)', 'condition': 'stats.inventory.bait > 0', 'effect': {'to': 'scene_minigame_fishing'}}`
+* **资源点**: 这是一个 `Scene`。
+    * `scene_forest_mine_node` (森林矿点)
+    * **UI**: 包含按钮 `{'type': 'button', 'text': '开采', 'effect': func('harvest_node')}`。
+    * `func('harvest_node')` 会检查资源点状态 (`stats.nodes.forest_mine_01.respawn_time`)。
+
+### 3. 经济与建造 (动态状态驱动)
+
+* **地皮与房屋**:
+    * `scene_player_house` 是玩家的家。
+    * **建造**: 这是一个 `Scene` (`scene_workbench_build`)，允许玩家消耗 `stats.inventory` 中的材料，来修改 `stats.player.house.upgrades` (例如 `house.upgrades.has_kitchen = true`)。
+    * `scene_player_house` 的 `ui` 表达式会**动态读取** `stats.player.house.upgrades` 来决定显示哪些按钮（例如，`condition: 'stats.player.house.upgrades.has_kitchen'` 的 "烹饪" 按钮）。
+* **种植与饲养**:
+    * `scene_player_farm` (玩家农场)
+    * **UI**: 其 `ui` 表达式会迭代 `stats.player.farm.plots` (一个对象数组)。
+    * **数据**: `stats.player.farm.plots[0]` 可能是 `{ 'seed': 'tomato', 'plant_time': 12345, 'watered': true }`。
+    * **交互**: 按钮的 `condition` 会检查 `game.time` 和 `plant_time` 的差距，来动态显示 "浇水"、"除草" 或 "收获" 按钮。
+* **商店**:
+    * NPC 商店 (`scene_shop_general`) 是一个简单的 `Scene`，其按钮 `effect` 会执行交易逻辑（检查 `stats.gold` 并修改 `stats.inventory`）。
+
+### 4. 社交与组织 (状态即关系)
+
+* **NPC 好感度**:
+    * 每个 NPC 的好感度存储在 `stats.npc.<npc_id>.friendship`。
+    * `scene_dialog_<npc_id>` (对话场景) 中的 `button` 会使用 `condition: 'stats.npc.npc_id.friendship > 50'` 来解锁新的对话选项。
+* **组织 (公会)**:
+    * `stats.player.guild_id` 存储玩家的公会。
+    * `scene_guild_hall` (公会大厅) 的 `on_enter` 效果会检查 `stats.player.guild_id`，如果为空则 `to: 'scene_guild_reception'` (接待处)，否则 `to: 'scene_guild_main_hall'` (公会内部)。
+
+### 5. 技能与成长 (模板与配方)
+
+* **技能等级**:
+    * 所有技能等级存储在 `stats.skills` (例如 `stats.skills.cooking`, `stats.skills.forging`)。
+* **静态模板 (`templates`)**:
+    * 本包的 `templates` 字段定义了所有“静态蓝图”。
+        * `templates.items`: 定义所有物品的静态属性 (如 `sword_iron: { 'name': '铁剑', 'base_damage': 10 }`)。
+        * `templates.recipes`: 定义所有配方 (如 `recipe_bread: { 'name': '面包', 'skill': 'cooking', 'level': 1, 'materials': [{'item': 'flour', 'amount': 2}] }`)。
+* **合成场景**:
+    * `scene_workbench_kitchen` (烹饪台)
+    * **UI**: 其 `ui` 表达式会**迭代 `templates.recipes`**，并使用 `condition` 来检查玩家是否满足材料和技能等级 (`stats.skills.cooking >= recipe.level`)，只显示玩家可制作的选项。
+
+### 6. 事件与剧情 (状态机)
+
+* **任务系统**:
+    * 任务进度是典型的“状态机”，存储在 `stats.quests`。
+    * 例如, `stats.quests.main_01.stage` (0=未接, 10=已接, 20=已杀怪, 30=已交任务)。
+    * NPC 对话按钮的 `condition` 会检查 `stats.quests.main_01.stage == 10`，其 `effect` 会设置 `set_stat: [{ 'key': 'stats.quests.main_01.stage', 'value': 20 }]`。
+* **动态事件**:
+    * `scene_forest` (森林) 的 `on_enter` 效果可能会调用一个 `func('check_random_encounter')`。
+    * 这个 `func` 会根据 `rand()` (CEL内置的随机函数) 有一定几率返回一个 `Effect` 对象，例如 `{ 'message': '你遭遇了土匪！', 'to': 'scene_combat_bandits' }`。
+
+## 本数据包提供的关键定义
+
+* **`init_func`**: 提供 `'homestead.init_game'` 函数，用于设置初始玩家状态、初始时间和 `game.initialized` 标记。
+* **`hud_ui`**: 提供一个默认的HUD，显示时间、天气、玩家核心状态 (HP/MP) 以及全局按钮 (背包、菜单)。
+* **`templates`**:
+    * `items`: (武器、工具、食物、材料...)
+    * `recipes`: (烹饪、锻造、炼金...)
+    * `crops`: (作物生长周期、季节...)
+* **`scenes`**:
+    * `scene_main_menu`: 游戏主菜单。
+    * `scene_player_home`: 玩家的家。
+    * `scene_player_farm`: 玩家的农场。
+    * `scene_town_center`: 城镇中心 (枢纽场景)。
+    * `scene_shop_*`: 各种商店。
+    * `scene_workbench_*`: 各种工作台。
+    * `scene_inventory`: 背包界面。
+    * `scene_dialog_*`: 各种NPC对话。
+    * ...以及大量用于探索和任务的场景。
