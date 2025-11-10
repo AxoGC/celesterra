@@ -2,7 +2,7 @@
 
 :root {
   --el-border-radius-base: 16px;
-  @apply bg-gray-50 dark:bg-gray-900;
+  @apply bg-gray-50;
 }
 
 .card {
@@ -11,7 +11,7 @@
   overflow: hidden;
   transition: 0.2s ease;
   border-width: 1px;
-  @apply bg-white dark:bg-gray-800 border-gray-200;
+  @apply bg-white border-gray-200;
 }
 
 .card:hover {

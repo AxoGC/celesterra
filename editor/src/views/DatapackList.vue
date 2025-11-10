@@ -72,4 +72,9 @@ function handleFileUpload(event: Event): void {
     </div>
 
   </div>
+  <div class="p-4">
+    <div class="text-green-500">█████████▓</div>
+    <div class="text-amber-500">█████▓░░░░</div>
+    <div class="text-red-500">█▓░░░░░░░░</div>
+  </div>
 </template>

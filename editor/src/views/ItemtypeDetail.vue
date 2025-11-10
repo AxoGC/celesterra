@@ -52,7 +52,10 @@ const item = computed(() => data.data[datapackId.value]?.itemtypes[itemId.value]
     <div class="flex flex-col gap-4">
       <el-form v-for="a, i in item.actions" class="card">
         <el-form-item>
-          <el-button :icon="Delete" @click="item.actions.splice(i, 1)" circle class="ms-auto">
+          <el-button @click="a.condition = a.condition === '' ? undefined : ''" class="ms-auto">
+            {{a.condition !== undefined ? '有条件' : '无条件'}}
+          </el-button>
+          <el-button :icon="Delete" @click="item.actions.splice(i, 1)" circle>
           </el-button>
           <el-button v-if="i != item.actions.length - 1" :icon="ArrowDown" circle
           @click="[item.actions[i], item.actions[i + 1]] = [item.actions[i + 1], item.actions[i]] as any"
@@ -63,7 +66,7 @@ const item = computed(() => data.data[datapackId.value]?.itemtypes[itemId.value]
           <el-input v-model="a.label" type="textarea" class="font-mono" :input-style="{whiteSpace: 'pre'}" autosize spellcheck="false">
           </el-input>
         </el-form-item>
-        <el-form-item label="条件">
+        <el-form-item v-if="a.condition !== undefined" label="条件">
           <el-input v-model="a.condition" type="textarea" class="font-mono" :input-style="{whiteSpace: 'pre'}" autosize spellcheck="false">
           </el-input>
         </el-form-item>

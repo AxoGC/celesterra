@@ -1,0 +1,30 @@
+scene: 
+  time_limit?: { seconds: number, default: string(cel => effects) }
+	components: component[]
+
+component:
+	type: string
+	condition?: string(cel => boolean)
+
+text_component extends component:
+	type: 'text'
+  text: string(cel => string)
+
+button_component extends component:
+	type: 'button'
+	effect: string(cel => effects)
+
+container_component extends component:
+	type: 'container'
+	id: string
+
+input_component extends component:
+	type: 'input'
+	text: string
+	submit: string(cel => effects)
+
+effects:
+ add_health?: number
+ move?: string
+ set_flag?: map<string, any>
+ time_pass?: number

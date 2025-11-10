@@ -15,14 +15,6 @@ const router = createRouter({
       path: '/datapacks',
       component: () => import('@/views/Datapack.vue'),
     },
-    {
-      path: '/itemtypes',
-      component: () => import('@/views/Itemtype.vue'),
-    },
-    {
-      path: '/scenes',
-      component: () => import('@/views/Scene.vue'),
-    },
   ],
 })
 

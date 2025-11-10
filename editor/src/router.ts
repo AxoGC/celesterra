@@ -32,8 +32,8 @@ const router = createRouter({
       component: () => import('@/views/QuestDetail.vue'),
     },
     {
-      path: '/:datapackId/effects/:effectId',
-      component: () => import('@/views/EffectDetail.vue'),
+      path: '/:datapackId/funcs/:funcId',
+      component: () => import('@/views/FuncDetail.vue'),
     },
     {
       path: '/:datapackId/itemtypes/:itemId',

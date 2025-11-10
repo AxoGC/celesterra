@@ -1,0 +1,16 @@
+[
+  {
+    'type': 'text',
+    'content': '警察局已经关门了，你可以撬锁进入',
+	},
+  {
+    'type': 'lockpick',
+    'difficulty': 'expert',
+    'on_success': {'to': 'police_station_lobby'},
+    'on_fail': {},
+  },
+  {
+    'type': 'button',
+    'text': '返回中央广场',
+  },
+]

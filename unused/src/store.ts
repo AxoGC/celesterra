@@ -1,6 +1,6 @@
-import { computed, ref } from 'vue'
+import { ref } from 'vue'
 import { defineStore } from 'pinia'
-import type {Item, Itemtype, Scene} from './types'
+import type {Achievement, Area, Effect, Entity, Entitype, Item, Itemtype, Quest} from './types'
 
 interface DatapackProfile {
   name: string,
@@ -27,31 +27,34 @@ interface Save {
   place: string
   stats: Record<string, number>
   flags: Record<string, any>
+  entities: Record<string, Record<string, Entity[]>>
   items: Item[]
 }
 
 export const useStore = defineStore('store', () => {
 
+  const datapacks = ref<Record<string, DatapackProfile>>({})
+  const areas = ref<Record<string, Area>>({})
   const itemtypes = ref<Record<string, Itemtype>>({})
+  const entitypes = ref<Record<string, Entitype>>({})
+  const quests = ref<Record<string, Quest>>({})
+  const achievements = ref<Record<string, Achievement>>({})
+  const effects = ref<Record<string, Effect>>({})
+  const stats = ref<Record<string, string>>({})
 
   const backups = ref<SaveProfile[]>([])
-
-  const scenes = ref<Record<string, Scene>>({})
-  const sceneId = ref('')
-  const scene = computed(() => scenes.value[sceneId.value])
-  const stats = ref({health: 100, satiety: 100, energy: 100})
-  const items = ref<Item[]>([{id: 'apple', amount: 4}, {id: 'banana', amount: 3}])
 
   const save = ref<Save>({
     area: '',
     place: '',
     stats: {},
     flags: {},
+    entities: {},
     items: [],
   })
 
   return {
-    itemtypes, scene, scenes, stats, items,
+    datapacks, areas, itemtypes, entitypes, quests, achievements, effects, stats,
     backups, save,
   }
 }, { persist: true })

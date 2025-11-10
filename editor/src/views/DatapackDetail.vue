@@ -15,7 +15,7 @@ const itemId = ref('')
 const entitypeId = ref('')
 const questId = ref('')
 const achievementId = ref('')
-const effectId = ref('')
+const funcId = ref('')
 const statId = ref('')
 
 </script>
@@ -144,21 +144,21 @@ const statId = ref('')
     </div>
 
     <div class="flex justify-between">
-      <div class="text-xl">效果列表</div>
-      <el-input v-model="effectId" class="!w-64">
+      <div class="text-xl">函数列表</div>
+      <el-input v-model="funcId" class="!w-64">
         <template #append>
-          <el-button @click="datapack.effects[effectId] = { description: '', expression: '' }" :icon="Plus" circle>
+          <el-button @click="datapack.funcs[funcId] = { description: '', expression: '' }" :icon="Plus" circle>
           </el-button>
         </template>
       </el-input>
     </div>
     <div class="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-4">
-      <div v-for="e, k in datapack.effects" :key="k"
+      <div v-for="f, k in datapack.funcs" :key="k"
         class="card flex flex-wrap items-center gap-2 cursor-pointer content-start"
-        @click="$router.push(`/${datapackId}/effects/${k}`)"
+        @click="$router.push(`/${datapackId}/funcs/${k}`)"
       >
         <div>{{k}}</div>
-        <div class="text-sm text-subtle truncate">{{e.description}}</div>
+        <div class="text-sm text-subtle truncate">{{f.description}}</div>
       </div>
     </div>
 
