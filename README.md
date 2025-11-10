@@ -34,10 +34,10 @@ Celesterra 是一个为创作者设计的文字RPG游戏引擎，其灵感类似
       'text': '进入森林深处',
       // 按钮的 'effect' 字段是一个单一的 Effect 对象
       'effect': {
-        'set_stat': [
-          { 'key': 'stats.location', 'value': 'deep_forest' },
-          { 'key': 'stats.stamina', 'value': 'stats.stamina - 1' }
-        ],
+        'set_stats': {
+          'location': 'deep_forest',
+          'stamina': stats.stamina - 1,
+        },
         'to': 'scene_deep_forest'
       }
     },
@@ -117,8 +117,8 @@ export interface Scene {
 // Effect 是一个对象，包含零个或多个预定义的操作键
 export interface Effect {
   // 1. 设置或修改属性 (set_stat 总是最先执行)
-  //    使用对象数组以支持一次设置多个属性
-  set_stat?: { key: string, value: any }[];
+  //    使用对象的不同键以支持一次设置多个属性
+  set_stats?: { key: value };
 
   // 2. 删除属性
   del_stat?: string[];
@@ -145,10 +145,10 @@ export interface Effect {
 // 一个按钮的效果：
 // 扣除10金币，增加1木材，并跳转到商店
 "effect": {
-  "set_stat": [
-    { "key": "stats.gold", "value": "stats.gold - 10" },
-    { "key": "stats.inventory.wood", "value": "stats.inventory.wood + 1" }
-  ],
+  "set_stat": {
+    "gold": stats.gold - 10,
+    "inventory.wood": stats.inventory.wood + 1,
+  },
   "to": "scene_shop"
 }
 ```
@@ -223,8 +223,8 @@ Celesterra 允许同时加载多个 `Datapack`。
   * **执行**: 引擎在游戏**首次**启动时会调用这个 `func`。
   * **效果**: 这个 `func` 应该返回一个 `Effect` 对象，用于设置初始状态。
     > `// 'init_game' func 的 expression:`
-    > `{ 'set_stat': [ { 'key': 'stats.hp', 'value': 100 }, { 'key': 'game.initialized', 'value': true } ], 'to': 'scene_start' }`
-  * **幂等性**: 引擎应确保此函数只执行一次。创作者也应在 `func` 内部设置一个标记（如 `game.initialized`）来防止重复执行。
+    > `{ 'set_stats': { 'hp': 100, 'initialized': true }, 'to': 'scene_start' }`
+  * **幂等性**: 引擎应确保此函数只执行一次。创作者也应在 `func` 内部设置一个标记（如 `initialized`）来防止重复执行。
 
 ### 4\. 静态模板机制 (Templates)
 
@@ -287,10 +287,9 @@ Datapack 定义 (`funcs` 部分):
       "description": "为玩家增加生命值，并处理上限。",
       "expression": "
         {
-          'set_stat': [{
-            'key': 'stats.health',
-            'value': '(stats.health + args.value) > stats.max_health ? stats.max_health : (stats.health + args.value)'
-          }]
+          'set_stats': {
+            'health': (stats.health + args.value) > stats.max_health ? stats.max_health : (stats.health + args.value),
+          }
         }
       "
     },
@@ -300,11 +299,11 @@ Datapack 定义 (`funcs` 部分):
         (stats.health - args.value <= 0) ?
         {
           'message': '你已经死亡！',
-          'set_stat': [{ 'key': 'stats.health', 'value': 0 }],
+          'set_stats': { 'health': 0 },
           'to': 'scene_game_over'
         } :
         {
-          'set_stat': [{ 'key': 'stats.health', 'value': 'stats.health - args.value' }]
+          'set_stats': { 'stats.health': stats.health - args.value }
         }
       "
     }
